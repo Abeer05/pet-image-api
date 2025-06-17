@@ -6,6 +6,7 @@ import re
 s3 = boto3.client('s3')
 BUCKET_NAME = 'pet-image-api-bucket'
 FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg']
+VALID_LABELS = ['cat', 'dog']
 
 
 def lambda_handler(event, context):
@@ -81,7 +82,7 @@ def lambda_handler(event, context):
 
         # Validate label value
         label_value = label_value.lower()
-        if label_value not in ['cat', 'dog']:
+        if label_value not in VALID_LABELS:
             return {
                 'statusCode': 400,
                 'body': json.dumps({'error': "Invalid label value — must be 'cat' or 'dog'"})
