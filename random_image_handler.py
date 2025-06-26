@@ -12,7 +12,7 @@ if not BUCKET_NAME:
 VALID_LABELS = ['cat', 'dog']
 METADATA_KEY = 'weights.json'
 
-# RETURNING BINARY IMAGES
+# RETURNING BINARY IMAGES - USED IN ORIGINAL FUNCTION
 
 # weights_cache = None  # Cache weights to reduce warm S3 calls
 
@@ -94,7 +94,7 @@ METADATA_KEY = 'weights.json'
 #             'headers': {'Content-Type': 'application/json'}
 #         }
 
-# PRE-SIGNED URL METHOD FOR EFFICIENCY
+# PRE-SIGNED URL METHOD FOR EFFICIENCY - USED IN NEW FUNCTION
 
 def lambda_handler(event, context):
     try:

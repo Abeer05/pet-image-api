@@ -6,13 +6,15 @@ import os
 import random
 from botocore.config import Config
 
-config = Config(signature_version='s3v4', region_name='us-east-2')
+config = Config(signature_version='s3v4',
+                region_name='us-east-2')  # debugging purposes
 s3 = boto3.client('s3', config=config)
 
+# BUCKET_NAME = 'pet-image-api-bucket'
 BUCKET_NAME = os.environ['BUCKET_NAME']
 FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg']
-VALID_LABELS = ['cat', 'dog']
-WEIGHTS_KEY = 'weights.json'  # file to store image weights
+VALID_LABELS = ['cat', 'dog']  # Added array
+WEIGHTS_KEY = 'weights.json'  # File to store image weights
 
 
 def lambda_handler(event, context):
@@ -89,13 +91,15 @@ def lambda_handler(event, context):
             }
 
         # Upload image file to S3
-        file_key = f"{label_value}/{file_name}"
+        file_key = f"{label_value}/{file_name}"  # Made it cleaner
         s3.put_object(
             Bucket=BUCKET_NAME,
             Key=file_key,
             Body=file_data,
             ContentType=content_type_value or 'application/octet-stream'
         )
+
+        # ASSIGNING RANDOM WEIGHT INSTEAD OF HARDCODED VALUE
 
         # Assign a random weight between 1 and 10
         new_weight = random.randint(1, 10)
