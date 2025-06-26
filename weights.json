@@ -1,0 +1,15 @@
+{
+  "cat": [
+    { "key": "cat/Cat_August_2010-4.jpg", "weight": 3 },
+    { "key": "cat/Cat_November_2019-1a.jpg", "weight": 1 },
+    { "key": "cat/cat.webp", "weight": 5 }
+  ],
+  "dog": [
+    {
+      "key": "dog/dog-puppy-on-garden-royalty-free-image-1586966191.jpg",
+      "weight": 4
+    },
+    { "key": "dog/dog.png", "weight": 6 },
+    { "key": "dog/Labrador_Retriever_portrait.jpg", "weight": 2 }
+  ]
+}

@@ -1,0 +1,295 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Pet Image API with upload and random image endpoints"
+
+Parameters:
+  UploadLambdaCodeBucket:
+    Type: String
+    Description: S3 bucket containing the upload Lambda function code
+
+  UploadLambdaCodeKey:
+    Type: String
+    Description: S3 key for the upload Lambda function code
+    Default: upload_lambda.zip
+
+  RandomLambdaCodeBucket:
+    Type: String
+    Description: S3 bucket containing the random Lambda function code
+
+  RandomLambdaCodeKey:
+    Type: String
+    Description: S3 key for the random Lambda function code
+    Default: random_lambda.zip
+
+Resources:
+  PetImageBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Delete
+    Properties:
+      BucketName: !Sub "pet-image-api-bucket-${AWS::AccountId}-${AWS::Region}"
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+
+  # IAM Role for Upload Lambda
+  UploadLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "upload-image-role-${AWS::StackName}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: S3UploadPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource: !Sub "arn:aws:s3:::${PetImageBucket}"
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:PutObjectAcl
+                Resource: !Sub "arn:aws:s3:::${PetImageBucket}/*"
+
+  # IAM Role for Random Image Lambda
+  RandomLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "random-image-role-${AWS::StackName}"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: S3ReadPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:ListBucket
+                Resource: !Sub "arn:aws:s3:::${PetImageBucket}"
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                Resource: !Sub "arn:aws:s3:::${PetImageBucket}/*"
+
+  # Upload Lambda Function
+  UploadLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "upload-image-handler-${AWS::StackName}"
+      Runtime: python3.12
+      Handler: upload_image_handler.lambda_handler
+      Role: !GetAtt UploadLambdaRole.Arn
+      Code:
+        S3Bucket: !Ref UploadLambdaCodeBucket
+        S3Key: !Ref UploadLambdaCodeKey
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref PetImageBucket
+      Timeout: 30
+      MemorySize: 128
+
+  # Random Image Lambda Function
+  RandomLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub "random-image-handler-${AWS::StackName}"
+      Runtime: python3.12
+      Handler: random_image_handler.lambda_handler
+      Role: !GetAtt RandomLambdaRole.Arn
+      Code:
+        S3Bucket: !Ref RandomLambdaCodeBucket
+        S3Key: !Ref RandomLambdaCodeKey
+      Environment:
+        Variables:
+          BUCKET_NAME: !Ref PetImageBucket
+      Timeout: 30
+      MemorySize: 128
+
+  # API Gateway REST API
+  PetImageApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub "pet-image-api-${AWS::StackName}"
+      Description: "API for uploading and retrieving random pet images"
+      BinaryMediaTypes:
+        - "multipart/form-data"
+        - "image/*"
+      EndpointConfiguration:
+        Types:
+          - REGIONAL
+
+  # API Gateway Resource: /upload
+  UploadResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref PetImageApi
+      ParentId: !GetAtt PetImageApi.RootResourceId
+      PathPart: upload
+
+  # API Gateway Resource: /random
+  RandomResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      RestApiId: !Ref PetImageApi
+      ParentId: !GetAtt PetImageApi.RootResourceId
+      PathPart: random
+
+  # API Gateway Method: POST /upload
+  UploadMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref PetImageApi
+      ResourceId: !Ref UploadResource
+      HttpMethod: POST
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UploadLambdaFunction.Arn}/invocations"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+
+  # API Gateway Method: GET /random
+  RandomMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      RestApiId: !Ref PetImageApi
+      ResourceId: !Ref RandomResource
+      HttpMethod: GET
+      AuthorizationType: NONE
+      ApiKeyRequired: true
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Sub "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RandomLambdaFunction.Arn}/invocations"
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+
+  # Lambda Permissions for API Gateway
+  UploadLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref UploadLambdaFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PetImageApi}/*/POST/upload"
+
+  RandomLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref RandomLambdaFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PetImageApi}/*/GET/random"
+
+  # API Gateway Deployment
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn:
+      - UploadMethod
+      - RandomMethod
+    Properties:
+      RestApiId: !Ref PetImageApi
+      Description: "Initial deployment"
+
+  # API Gateway Stage
+  ApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref PetImageApi
+      DeploymentId: !Ref ApiDeployment
+      StageName: dev
+      Description: "Development stage"
+
+  # API Key
+  ApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    Properties:
+      Name: !Sub "pet-image-api-key-${AWS::StackName}"
+      Description: "API key for pet image API"
+      Enabled: true
+
+  # Usage Plan
+  UsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    Properties:
+      UsagePlanName: !Sub "pet-image-usage-plan-${AWS::StackName}"
+      Description: "Usage plan for pet image API"
+      ApiStages:
+        - ApiId: !Ref PetImageApi
+          Stage: !Ref ApiStage
+      Quota:
+        Limit: 1000
+        Period: MONTH
+      Throttle:
+        RateLimit: 10
+        BurstLimit: 20
+
+  # Usage Plan Key
+  UsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref ApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlan
+
+Outputs:
+  ApiEndpoint:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${PetImageApi}.execute-api.${AWS::Region}.amazonaws.com/dev"
+    Export:
+      Name: !Sub "${AWS::StackName}-ApiEndpoint"
+
+  ApiKey:
+    Description: "API Key for accessing the endpoints"
+    Value: !Ref ApiKey
+    Export:
+      Name: !Sub "${AWS::StackName}-ApiKey"
+
+  S3BucketName:
+    Description: "S3 bucket name for storing images"
+    Value: !Ref PetImageBucket
+    Export:
+      Name: !Sub "${AWS::StackName}-S3Bucket"
+
+  UploadEndpoint:
+    Description: "Upload endpoint URL"
+    Value: !Sub "https://${PetImageApi}.execute-api.${AWS::Region}.amazonaws.com/dev/upload"
+
+  RandomEndpoint:
+    Description: "Random image endpoint URL"
+    Value: !Sub "https://${PetImageApi}.execute-api.${AWS::Region}.amazonaws.com/dev/random"
