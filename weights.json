@@ -1,7 +1,7 @@
 {
   "cat": [
     { "key": "cat/Cat_August_2010-4.jpg", "weight": 3 },
-    { "key": "cat/Cat_November_2019-1a.jpg", "weight": 1 },
+    { "key": "cat/Cat_November_2010-1a.jpg", "weight": 1 },
     { "key": "cat/cat.webp", "weight": 5 }
   ],
   "dog": [

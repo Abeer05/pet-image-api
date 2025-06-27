@@ -4,11 +4,8 @@ import boto3
 import re
 import os
 import random
-from botocore.config import Config
 
-config = Config(signature_version='s3v4',
-                region_name='us-east-2')  # debugging purposes
-s3 = boto3.client('s3', config=config)
+s3 = boto3.client('s3')  # debugging purposes
 
 # BUCKET_NAME = 'pet-image-api-bucket'
 BUCKET_NAME = os.environ['BUCKET_NAME']
@@ -72,7 +69,7 @@ def lambda_handler(event, context):
                 if content_type_value not in FILE_TYPES:
                     return {
                         'statusCode': 400,
-                        'body': json.dumps({'error': 'Invalid file type — only .jpg, .jpeg, .png, and .webp are allowed'})
+                        'body': json.dumps({'error': 'Invalid file type - only .jpg, .jpeg, .png, and .webp are allowed'})
                     }
 
                 file_data = body_section
@@ -87,7 +84,7 @@ def lambda_handler(event, context):
         if label_value not in VALID_LABELS:
             return {
                 'statusCode': 400,
-                'body': json.dumps({'error': "Invalid label value — must be 'cat' or 'dog'"})
+                'body': json.dumps({'error': "Invalid label value - must be 'cat' or 'dog'"})
             }
 
         # Upload image file to S3

@@ -1,5 +1,4 @@
 import json
-import base64
 import boto3
 import random
 import os
@@ -12,7 +11,7 @@ if not BUCKET_NAME:
 VALID_LABELS = ['cat', 'dog']
 METADATA_KEY = 'weights.json'
 
-# RETURNING BINARY IMAGES - USED IN ORIGINAL FUNCTION
+# RETURNING BINARY IMAGES - USED IN pet-image-api
 
 # weights_cache = None  # Cache weights to reduce warm S3 calls
 
@@ -48,7 +47,7 @@ METADATA_KEY = 'weights.json'
 #             print("Invalid label:", label)
 #             return {
 #                 'statusCode': 400,
-#                 'body': json.dumps({'error': "Invalid label value — must be 'cat' or 'dog'"}),
+#                 'body': json.dumps({'error': "Invalid label value - must be 'cat' or 'dog'"}),
 #                 'headers': {'Content-Type': 'application/json'}
 #             }
 
@@ -94,7 +93,7 @@ METADATA_KEY = 'weights.json'
 #             'headers': {'Content-Type': 'application/json'}
 #         }
 
-# PRE-SIGNED URL METHOD FOR EFFICIENCY - USED IN NEW FUNCTION
+# PRE-SIGNED URL METHOD FOR EFFICIENCY - USED IN pet-image-api-PetImageApiStack
 
 def lambda_handler(event, context):
     try:
@@ -111,7 +110,7 @@ def lambda_handler(event, context):
         if label not in VALID_LABELS:
             return {
                 'statusCode': 400,
-                'body': json.dumps({'error': "Invalid label value — must be 'cat' or 'dog'"}),
+                'body': json.dumps({'error': "Invalid label value - must be 'cat' or 'dog'"}),
                 'headers': {'Content-Type': 'application/json'}
             }
 
