@@ -45,6 +45,7 @@ curl -OJ -X GET "https://bloids9g1k.execute-api.us-east-2.amazonaws.com/dev/rand
 
 ## YAML Stack Deployment (Optimized)
 This version returns pre-signed URLs instead of the image binary data, which is faster and more scalable.
+Ensure the user has the correct permissions (role management and policies) to be able to create the stack.
 ### Steps:
 - Upload lambda code to your S3 bucket:
 - Deploy with CloudFormation:
