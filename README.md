@@ -65,7 +65,7 @@ API endpoints/keys will appear in the deployment output.
 ## Known Constraints
 | Version	| Limitation |
 |---------|------------|
-| Pre-Deployed | weights.json is haerdcoded --> new uploads don't affect random image selection |
+| Pre-Deployed | weights.json is hardcoded --> new uploads don't affect random image selection |
 | YAML Stack | weights.json is updated on upload --> deleted images aren’t reflected (would require seperate function) |
 
 ## Cost Estimates (USD)
